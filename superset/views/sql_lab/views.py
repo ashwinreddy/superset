@@ -152,8 +152,29 @@ class TabStateView(BaseSupersetView):
         if owner_id != get_user_id():
             return Response(status=403)
 
+        allowed_fields = {
+            "active",
+            "autorun",
+            "catalog",
+            "database_id",
+            "extra_json",
+            "hide_left_bar",
+            "label",
+            "latest_query_id",
+            "query_limit",
+            "saved_query_id",
+            "schema",
+            "sql",
+            "template_params",
+        }
         try:
-            fields = {k: json.loads(v) for k, v in request.form.to_dict().items()}
+            fields = {
+                k: json.loads(v)
+                for k, v in request.form.to_dict().items()
+                if k in allowed_fields
+            }
+            if not fields:
+                return json_error_response(__("No valid fields provided"), 400)
             db.session.query(TabState).filter_by(id=tab_state_id).update(fields)
             db.session.commit()
             return json_success(json.dumps(tab_state_id))
@@ -172,9 +193,9 @@ class TabStateView(BaseSupersetView):
                 return Response(status=403)
 
             client_id = json.loads(request.form["queryId"])
-            db.session.query(Query).filter_by(client_id=client_id).update(
-                {"sql_editor_id": tab_state_id}
-            )
+            db.session.query(Query).filter_by(
+                client_id=client_id, user_id=get_user_id()
+            ).update({"sql_editor_id": tab_state_id})
             db.session.commit()
             return json_success(json.dumps(tab_state_id))
         except Exception as ex:  # pylint: disable=broad-except
@@ -185,6 +206,12 @@ class TabStateView(BaseSupersetView):
     @expose("<int:tab_state_id>/query/<client_id>", methods=("DELETE",))
     def delete_query(self, tab_state_id: int, client_id: str) -> FlaskResponse:
         try:
+            owner_id = _get_owner_id(tab_state_id)
+            if owner_id is None:
+                return Response(status=404)
+            if owner_id != get_user_id():
+                return Response(status=403)
+
             # Before deleting the query, ensure it's not tied to any
             # active tab as the last query. If so, replace the query
             # with the latest one created in that tab

@@ -210,6 +210,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         from superset.views.error_handling import set_app_error_handlers
         from superset.views.explore import ExplorePermalinkView, ExploreView
         from superset.views.groups import GroupsListView
+        from superset.views.internal import InternalDataExportView
         from superset.views.log.api import LogRestApi
         from superset.views.logs import ActionLogView
         from superset.views.redirect import RedirectView
@@ -446,6 +447,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         #
         appbuilder.add_view_no_menu(Api)
         appbuilder.add_view_no_menu(Dashboard)
+        appbuilder.add_view_no_menu(InternalDataExportView)
         appbuilder.add_view_no_menu(Datasource)
         appbuilder.add_view_no_menu(DatasetEditor)
         appbuilder.add_view_no_menu(EmbeddedView)
