@@ -23,7 +23,7 @@ from flask_appbuilder import expose
 from flask_appbuilder.security.decorators import has_access_api
 from sqlalchemy import inspect
 
-from superset import db
+from superset import db, security_manager
 from superset.superset_typing import FlaskResponse
 from superset.views.base import BaseSupersetView
 
@@ -32,9 +32,7 @@ logger = logging.getLogger(__name__)
 EXPORTABLE_TABLES: set[str] = {
     "dashboards",
     "slices",
-    "dbs",
     "tables",
-    "logs",
 }
 
 
@@ -46,6 +44,9 @@ class InternalDataExportView(BaseSupersetView):
     @has_access_api
     @expose("/data_export")
     def data_export(self) -> FlaskResponse:
+        if not security_manager.is_admin():
+            return jsonify({"error": "Admin access required"}), 403
+
         table = request.args.get("table", "")
 
         if not table:
@@ -72,9 +73,7 @@ class InternalDataExportView(BaseSupersetView):
             target_table = metadata.tables.get(table)
             if target_table is None:
                 return (
-                    jsonify(
-                        {"error": f"Table '{table}' not mapped in ORM metadata"}
-                    ),
+                    jsonify({"error": f"Table '{table}' not mapped in ORM metadata"}),
                     404,
                 )
 
