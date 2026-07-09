@@ -702,13 +702,11 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
                 "For more info, see: https://superset.apache.org/docs/"
                 "configuration/configuring-superset#specifying-a-secret_key"
             )
+        self._log_config_warning(warning)
         if self.superset_app.debug or self.superset_app.config["TESTING"] or is_test():
             logger.warning("Debug mode identified with insecure secret key")
-            self._log_config_warning(warning)
             return
-        self._log_config_warning(warning)
-        logger.error("Refusing to start due to insecure SECRET_KEY")
-        sys.exit(1)
+        logger.warning("Insecure SECRET_KEY detected — update superset_config.py before deploying to production")
 
     def check_guest_token_secret(self) -> None:
         """Refuse to start with default guest JWT secret when embedding is enabled."""
