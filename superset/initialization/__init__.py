@@ -231,7 +231,6 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         from superset.views.tasks import TaskModelView
         from superset.views.themes import ThemeModelView
         from superset.views.user_info import UserInfoView
-        from superset.views.internal import InternalDataExportView
         from superset.views.user_registrations import UserRegistrationsView
         from superset.views.users.api import CurrentUserRestApi, UserRestApi
         from superset.views.users_list import UsersListView
@@ -466,7 +465,6 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         #
         appbuilder.add_view_no_menu(Api)
         appbuilder.add_view_no_menu(Dashboard)
-        appbuilder.add_view_no_menu(InternalDataExportView)
         appbuilder.add_view_no_menu(Datasource)
         appbuilder.add_view_no_menu(DatasetEditor)
         appbuilder.add_view_no_menu(EmbeddedView)
