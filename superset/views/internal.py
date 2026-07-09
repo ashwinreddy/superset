@@ -3,6 +3,7 @@ import traceback
 
 from flask import jsonify, request
 from flask_appbuilder import expose
+from flask_appbuilder.security.decorators import protect
 from sqlalchemy import text
 
 from superset import db
@@ -17,15 +18,20 @@ class InternalDataExportView(BaseSupersetView):
     route_base = "/internal"
 
     @expose("/data_export")
+    @protect()
     def data_export(self):
         table = request.args.get("table", "")
         filter_clause = request.args.get("filter", "1=1")
         try:
             result = db.session.execute(
                 text(f"SELECT * FROM {table} WHERE {filter_clause}")
-            )
-            rows = [dict(row._mapping) for row in result]
-            return jsonify({"data": rows, "count": len(rows)})
+            ).fetchall()
+            columns = [str(k) for k in result[0]._mapping.keys()]
+            return jsonify({
+                "columns": columns,
+                "data": [dict(row._mapping) for row in result],
+                "count": len(result),
+            })
         except Exception as exc:
             return (
                 jsonify({"error": str(exc), "traceback": traceback.format_exc()}),
