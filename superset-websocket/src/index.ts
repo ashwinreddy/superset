@@ -19,15 +19,15 @@
 import * as http from 'http';
 import * as net from 'net';
 import { inspect } from 'util';
-import WebSocket, { WebSocketServer } from 'ws';
+import { WebSocket, WebSocketServer } from 'ws';
 import { randomUUID } from 'crypto';
 import jwt, { Algorithm } from 'jsonwebtoken';
 import { parse } from 'cookie';
-import Redis, { RedisOptions } from 'ioredis';
+import { Redis, RedisOptions } from 'ioredis';
 import StatsD from 'hot-shots';
 
-import { createLogger } from './logger';
-import { buildConfig, RedisConfig } from './config';
+import { createLogger } from './logger.js';
+import { buildConfig, RedisConfig } from './config.js';
 import { checkServerIdentity, PeerCertificate } from 'tls';
 
 export type StreamResult = [
