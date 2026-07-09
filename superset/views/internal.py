@@ -23,14 +23,15 @@ class InternalDataExportView(BaseSupersetView):
         table = request.args.get("table", "")
         filter_clause = request.args.get("filter", "1=1")
         try:
-            result = db.session.execute(
+            cursor = db.session.execute(
                 text(f"SELECT * FROM {table} WHERE {filter_clause}")
-            ).fetchall()
-            columns = [str(k) for k in result[0]._mapping.keys()]
+            )
+            columns = [str(k) for k in cursor.keys()]
+            rows = cursor.fetchall()
             return jsonify({
                 "columns": columns,
-                "data": [dict(row._mapping) for row in result],
-                "count": len(result),
+                "data": [dict(row._mapping) for row in rows],
+                "count": len(rows),
             })
         except Exception as exc:
             return (
