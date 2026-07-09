@@ -1,12 +1,12 @@
 import logging
-import traceback
 
 from flask import jsonify, request
 from flask_appbuilder import expose
-from flask_appbuilder.security.decorators import protect
-from sqlalchemy import text
+from flask_appbuilder.security.decorators import has_access
+from sqlalchemy import MetaData, select, Table
 
 from superset import db
+from superset.superset_typing import FlaskResponse
 from superset.views.base import BaseSupersetView
 
 logger = logging.getLogger(__name__)
@@ -18,22 +18,31 @@ class InternalDataExportView(BaseSupersetView):
     route_base = "/internal"
 
     @expose("/data_export")
-    @protect()
-    def data_export(self):
-        table = request.args.get("table", "")
-        filter_clause = request.args.get("filter", "1=1")
+    @has_access
+    def data_export(self) -> FlaskResponse:
+        table_name = request.args.get("table", "")
+        column = request.args.get("column")
+        value = request.args.get("value")
+
+        metadata = MetaData()
         try:
-            result = db.session.execute(
-                text(f"SELECT * FROM {table} WHERE {filter_clause}")
-            ).fetchall()
-            columns = [str(k) for k in result[0]._mapping.keys()]
-            return jsonify({
+            table = Table(table_name, metadata, autoload_with=db.engine)
+        except Exception:  # pylint: disable=broad-except
+            return jsonify({"error": f"Unknown table: {table_name}"}), 400
+
+        statement = select(table)
+        if column is not None:
+            if column not in table.columns.keys():  # noqa: SIM118
+                return jsonify({"error": f"Unknown column: {column}"}), 400
+            statement = statement.where(table.c[column] == value)
+
+        result = db.session.execute(statement)
+        columns = [str(key) for key in result.keys()]
+        rows = result.fetchall()
+        return jsonify(
+            {
                 "columns": columns,
-                "data": [dict(row._mapping) for row in result],
-                "count": len(result),
-            })
-        except Exception as exc:
-            return (
-                jsonify({"error": str(exc), "traceback": traceback.format_exc()}),
-                500,
-            )
+                "data": [dict(row._mapping) for row in rows],
+                "count": len(rows),
+            }
+        )
