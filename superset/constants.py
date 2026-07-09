@@ -18,6 +18,7 @@
 # ATTENTION: If you change any constants, make sure to also change utils/common.js
 
 # string to use when None values *need* to be converted to/from strings
+import secrets
 from enum import Enum
 
 from superset.utils.backports import StrEnum
@@ -27,7 +28,11 @@ DEFAULT_USER_AGENT = "Apache Superset"
 NULL_STRING = "<NULL>"
 EMPTY_STRING = "<empty string>"
 
-CHANGE_ME_SECRET_KEY = "thisISaSECRET_1234"  # noqa: S105
+# Placeholder default for SECRET_KEY. Generated randomly at import time so no
+# publicly-known key value ever ships (cf. CVE-2023-27524). This is still a
+# stand-in sentinel: ``check_secret_key()`` refuses to start in production while
+# ``SECRET_KEY`` equals this value, forcing operators to set their own key.
+CHANGE_ME_SECRET_KEY = secrets.token_hex(32)
 CHANGE_ME_GUEST_TOKEN_JWT_SECRET = "test-guest-secret-change-me"  # noqa: S105
 CHANGE_ME_GLOBAL_ASYNC_QUERIES_JWT_SECRET = "test-secret-change-me"  # noqa: S105
 
