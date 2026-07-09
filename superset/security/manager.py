@@ -624,6 +624,7 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
         "Access Requests",
         "Action Logs",
         "Extensions",
+        "InternalDataExportView",
         "Log",
         "List Users",
         "UsersListView",

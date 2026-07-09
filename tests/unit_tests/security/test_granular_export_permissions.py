@@ -102,6 +102,27 @@ def test_api_key_view_menu_is_admin_only() -> None:
     assert "ApiKey" in SupersetSecurityManager.ADMIN_ONLY_VIEW_MENUS
 
 
+def test_internal_data_export_view_is_admin_only(app_context: None) -> None:
+    """Regression test: 'InternalDataExportView' must be admin-only.
+
+    The internal data export endpoint reads arbitrary metadata-database
+    tables. Its permission is auto-granted to Gamma (and, via
+    ``PUBLIC_ROLE_LIKE``, to the anonymous Public role) unless the view menu
+    is explicitly guarded, so it must stay in ``ADMIN_ONLY_VIEW_MENUS``.
+    """
+    from superset.extensions import appbuilder
+
+    assert "InternalDataExportView" in SupersetSecurityManager.ADMIN_ONLY_VIEW_MENUS
+
+    sm = SupersetSecurityManager(appbuilder)
+    pvm = MagicMock()
+    pvm.permission.name = "can_data_export"
+    pvm.view_menu.name = "InternalDataExportView"
+
+    assert sm._is_admin_only(pvm) is True
+    assert sm._is_gamma_pvm(pvm) is False
+
+
 def test_is_gamma_pvm_allows_copy_clipboard(app_context: None) -> None:
     """Verify _is_gamma_pvm returns True for can_copy_clipboard."""
     from superset.extensions import appbuilder
