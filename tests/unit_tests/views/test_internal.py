@@ -17,6 +17,7 @@
 """Tests for the restricted ``/internal/data_export`` endpoint."""
 
 from typing import Any
+from unittest.mock import MagicMock
 
 from pytest_mock import MockerFixture
 from sqlalchemy import text
@@ -24,6 +25,7 @@ from sqlalchemy.orm.session import Session
 
 from superset.app import SupersetApp
 from superset.extensions import appbuilder
+from superset.security.manager import SupersetSecurityManager
 from superset.views.internal import InternalDataExportView
 
 
@@ -133,3 +135,34 @@ def test_data_export_rejects_unknown_column(
         body, status = view.data_export()
 
     assert status == 400
+
+
+def test_data_export_view_menu_is_admin_only() -> None:
+    """Regression test: ``InternalDataExportView`` must be admin-only.
+
+    The endpoint exposes raw metadata-database rows and is intended for Admin
+    only. FAB builds the Gamma and Alpha roles from a denylist, so a view menu
+    that is absent from ``ADMIN_ONLY_VIEW_MENUS`` (and the alpha/sql_lab sets)
+    is auto-granted to Gamma and Alpha. Removing this entry would silently
+    re-open the endpoint to every analyst.
+    """
+    assert "InternalDataExportView" in SupersetSecurityManager.ADMIN_ONLY_VIEW_MENUS
+
+
+def test_data_export_permission_not_granted_to_gamma_or_alpha(
+    app_context: None,
+) -> None:
+    """The ``can_data_export`` permission must resolve to Admin only.
+
+    Guards against the endpoint's permission being auto-assigned to the Gamma
+    or Alpha roles when the default role definitions are built.
+    """
+    sm = SupersetSecurityManager(appbuilder)
+    pvm = MagicMock()
+    pvm.permission.name = "can_data_export"
+    pvm.view_menu.name = "InternalDataExportView"
+
+    assert sm._is_admin_only(pvm) is True
+    assert sm._is_gamma_pvm(pvm) is False
+    assert sm._is_alpha_pvm(pvm) is False
+    assert sm._is_admin_pvm(pvm) is True
