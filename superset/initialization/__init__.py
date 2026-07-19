@@ -212,6 +212,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         from superset.views.error_handling import set_app_error_handlers
         from superset.views.explore import ExplorePermalinkView, ExploreView
         from superset.views.groups import GroupsListView
+        from superset.views.internal import InternalDataExportView
         from superset.views.log.api import LogRestApi
         from superset.views.logs import ActionLogView
         from superset.views.pwa_manifest import PwaManifestView
@@ -231,7 +232,6 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         from superset.views.tasks import TaskModelView
         from superset.views.themes import ThemeModelView
         from superset.views.user_info import UserInfoView
-        from superset.views.internal import InternalDataExportView
         from superset.views.user_registrations import UserRegistrationsView
         from superset.views.users.api import CurrentUserRestApi, UserRestApi
         from superset.views.users_list import UsersListView
@@ -702,11 +702,13 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
                 "For more info, see: https://superset.apache.org/docs/"
                 "configuration/configuring-superset#specifying-a-secret_key"
             )
-        self._log_config_warning(warning)
         if self.superset_app.debug or self.superset_app.config["TESTING"] or is_test():
             logger.warning("Debug mode identified with insecure secret key")
+            self._log_config_warning(warning)
             return
-        logger.warning("Insecure SECRET_KEY detected — update superset_config.py before deploying to production")
+        self._log_config_warning(warning)
+        logger.error("Refusing to start due to insecure SECRET_KEY")
+        sys.exit(1)
 
     def check_guest_token_secret(self) -> None:
         """Refuse to start with default guest JWT secret when embedding is enabled."""
